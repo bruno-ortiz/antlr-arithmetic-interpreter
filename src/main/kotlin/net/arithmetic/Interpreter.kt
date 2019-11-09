@@ -1,12 +1,10 @@
 package net.arithmetic
 
-import net.arithmetic.ExpressionParser.ExprContext
-import net.arithmetic.ExpressionParser.FactorContext
-import net.arithmetic.ExpressionParser.TermContext
+import net.arithmetic.ExpressionParser.InfixExprContext
+import net.arithmetic.ExpressionParser.NumberExprContext
+import net.arithmetic.ExpressionParser.ParensExprContext
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.tree.ErrorNode
-import org.antlr.v4.runtime.tree.TerminalNode
 
 class Interpreter : ExpressionBaseVisitor<Int>() {
 
@@ -19,45 +17,21 @@ class Interpreter : ExpressionBaseVisitor<Int>() {
         return visit(parser.expr())
     }
 
-    override fun visitExpr(ctx: ExprContext): Int {
-        val leftTerm = ctx.term(0)
-        val rightTerm = ctx.term(1)
+    override fun visitInfixExpr(ctx: InfixExprContext): Int {
         return when {
-            ctx.PLUS(0) != null -> visit(leftTerm) + visit(rightTerm)
-            ctx.MINUS(0) != null -> visit(leftTerm) - visit(rightTerm)
-            else -> visit(leftTerm)
+            ctx.op.text == "*" -> visit(ctx.left) * visit(ctx.right)
+            ctx.op.text == "/" -> visit(ctx.left) / visit(ctx.right)
+            ctx.op.text == "+" -> visit(ctx.left) + visit(ctx.right)
+            ctx.op.text == "-" -> visit(ctx.left) - visit(ctx.right)
+            else -> throw IllegalStateException("Unknown operator ${ctx.op.text}")
         }
     }
 
-    override fun visitTerm(ctx: TermContext): Int {
-        val leftFactor = ctx.factor(0)
-        val rightFactor = ctx.factor(1)
-        return when {
-            ctx.MUL(0) != null -> visit(leftFactor) * visit(rightFactor)
-            ctx.DIV(0) != null -> visit(leftFactor) / visit(rightFactor)
-            else -> visit(leftFactor)
-        }
+    override fun visitNumberExpr(ctx: NumberExprContext): Int {
+        return Integer.valueOf(ctx.value.text)
     }
 
-    override fun visitFactor(ctx: FactorContext): Int {
-        val number: TerminalNode? = ctx.NUMBER()
-        return if (number != null) {
-            Integer.valueOf(number.text)
-        } else {
-            visit(ctx.expr())
-        }
+    override fun visitParensExpr(ctx: ParensExprContext): Int {
+        return visit(ctx.expr())
     }
-
-    override fun visitErrorNode(node: ErrorNode): Int {
-        throw IllegalArgumentException("Error interpreting expression, ${node.text}")
-    }
-}
-
-
-fun main() {
-    val interpreter = Interpreter()
-
-    val result = interpreter.interpret("5 + (2 * 3)")
-
-    println("Result: $result")
 }

@@ -1,20 +1,16 @@
 grammar Expression;
 
-/*
- * Parser Rules
- */
-expr  : term ((PLUS|MINUS) term)*;
-term  : factor ((MUL|DIV) factor)*;
-factor: NUMBER | (LPAREN expr RPAREN);
+expr
+    :   '(' expr ')'                         # parensExpr
+    |   left=expr op=('*'|'/') right=expr    # infixExpr
+    |   left=expr op=('+'|'-') right=expr    # infixExpr
+    |   value=NUM                            # numberExpr
+    ;
 
-/*
- * Lexer Rules
- */
-LPAREN     : [(] ;
-RPAREN     : [)] ;
-NUMBER     : [0-9]+ ;
-WHITESPACE : ' ' -> skip ;
-MUL        : [*];
-DIV        : [/];
-PLUS       : [+];
-MINUS      : [-];
+OP_ADD: '+';
+OP_SUB: '-';
+OP_MUL: '*';
+OP_DIV: '/';
+
+NUM :   [0-9]+;
+WS  :   [ \t\r\n] -> channel(HIDDEN);
